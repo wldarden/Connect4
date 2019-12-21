@@ -47,8 +47,7 @@ class Board:
             if (self.board[ri][col] is None):
                 self.board[ri][col] = piece
                 return True
-        print('Error, column filled')
-        raise
+        return False
 
     """Returns None if no winner, returns team if a win is found"""
     def hasWinner(self):
@@ -111,16 +110,22 @@ class Board:
     def checkDiagonal(self, run, row, col, piece, direction):
         if run >= 4:
             return piece.team
-        if ((col + direction) < 0) or ((col + direction) > len(self.board[0])):
+        if ((col + direction) < 0) or ((col + direction) > len(self.board[0]) - 1):
             return None
-        if row < 0 or row > len(self.board):
+        if row < 0 or row > len(self.board) - 1:
             return None
         team = piece.team
         if self.board[row-1][col + direction] is not None and self.board[row-1][col + direction].team == team:
             return self.checkDiagonal(run + 1, row - 1, col + direction, piece, direction)
         else:
             return None
-        
+
+    """if there is a valid move left, return true. else, return false"""
+    def availableMoves(self):
+        for pos in self.board[0]:
+            if pos == None:
+                return True
+        return False
 
 class Piece:
     team = ''
@@ -130,40 +135,35 @@ class Piece:
 
                
 class Player:
+    team = ''
     
+    def __init__(self, team):
+        self.team = team
     def move(self, board=[]):
-        return random.random()
+        return int(random.random() * 7)
 
 
 
 b = Board()
+p1 = Player(config['team1Char'])
+p2 = Player(config['team2Char'])
+while not b.hasWinner() and b.availableMoves():
+    b.printBoard()
+    p1Moved = False
+    while not p1Moved:
+        move = p1.move()
+        print('player 1 move', move)
+        b.printBoard()
+        p1Moved = b.dropPiece(move, Piece(p1.team))
+    if b.availableMoves():
+        p2Moved = False
+        while not p2Moved:
+            move = p2.move()
+            print('player 2 move', move)
+            b.printBoard()
+            p2Moved = b.dropPiece(move, Piece(p2.team))
 b.printBoard()
-b.dropPiece(4, Piece(config['team1Char']))
-
-b.dropPiece(3, Piece(config['team2Char']))
-b.dropPiece(3, Piece(config['team1Char']))
-
-b.dropPiece(2, Piece(config['team2Char']))
-b.dropPiece(2, Piece(config['team2Char']))
-b.dropPiece(2, Piece(config['team1Char']))
-
-b.dropPiece(1, Piece(config['team2Char']))
-b.dropPiece(1, Piece(config['team2Char']))
-b.dropPiece(1, Piece(config['team2Char']))
-b.dropPiece(1, Piece(config['team1Char']))
-#b.dropPiece(3, Piece(config['team1Char']))
-#b.dropPiece(3, Piece(config['team1Char']))
-b.printBoard()
-winner = b.hasWinner()
-if (winner):
-    print('Winner!', winner)
-else:
-    print('No Winner')
-b.printBoard()
-
-
-
-
+print(b.hasWinner())
 
 
 
