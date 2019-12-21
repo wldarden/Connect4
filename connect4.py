@@ -10,162 +10,93 @@ Created on Fri Dec 20 18:39:48 2019
 
 
 # game board
-
 import random
-
+from Connect4Board import Board
+from Connect4Player import Player
+from Connect4Piece import Piece
 config = {
         "team1Char": 'X',
         "team2Char": 'O'
         }
 
 
-class Board:
-    board = [[None,None,None,None,None,None,None],
-             [None,None,None,None,None,None,None],
-             [None,None,None,None,None,None,None],
-             [None,None,None,None,None,None,None],
-             [None,None,None,None,None,None,None],
-             [None,None,None,None,None,None,None]]
-    
-    def printBoard(self):
-        rowNumber = 0
-        print('*****************************')
-        print('Column', [' 0 ', ' 1 ', ' 2 ', ' 3 ', ' 4 ',' 5 ',' 6 '])
-        for row in self.board:
-            strRow = []
-            for p in row:
-                if p is None:
-                    strRow.append('   ')
-                else:
-                    strRow.append(' ' + p.team + ' ')
-            print('Row:', rowNumber, strRow)
-            rowNumber += 1
-        print('*****************************')
-            
-    def dropPiece(self, col, piece):
-        for ri in range(len(self.board) - 1, -1, -1):
-            if (self.board[ri][col] is None):
-                self.board[ri][col] = piece
-                return True
-        return False
+class C4:
+    history = []
+    players = []
+    rate = .5
+    def __init__(self, nPlayers=100):
+        for i in range(nPlayers):
+            self.players.append(Player(str(int(random.random()*1000))))
+#        self.players.append(Player(config['team2Char']))
 
-    """Returns None if no winner, returns team if a win is found"""
-    def hasWinner(self):
-        #check row:
-        for row in self.board:
-            aCount = 0
-            bCount = 0
-            for pos in row:
-                if pos == None:
-                    aCount = 0
-                    bCount = 0
-                else:
-                    if pos.team == config['team1Char']:
-                        aCount += 1
-                        bCount = 0
-                    elif pos.team == config['team2Char']:
-                        aCount = 0
-                        bCount += 1                    
-                    if aCount >= 4:
-                        return config['team1Char']
-                    elif bCount >= 4:
-                        return config['team2Char']
-        # check Columns
-        for c in range(len(self.board[0])):
-            aCount = 0
-            bCount = 0
-            for row in self.board:
-                pos = row[c]
-                if pos == None:
-                    aCount = 0
-                    bCount = 0
-                else:
-                    if pos.team == config['team1Char']:
-                        aCount += 1
-                        bCount = 0
-                    elif pos.team == config['team2Char']:
-                        aCount = 0
-                        bCount += 1                    
-                    if aCount >= 4:
-                        return config['team1Char']
-                    elif bCount >= 4:
-                        return config['team2Char']
-        #check diagonals
-        for rowi in range(len(self.board) - 1,0, -1):
-            for coli in range(len(self.board[0])):
-                if self.board[rowi][coli] is not None:
-                    piece = self.board[rowi][coli]
-                    #check left
-                    isWin = self.checkDiagonal(1, rowi, coli, piece, -1)
-                    if isWin is not None:
-                        return piece.team
-                    #check right
-                    isWin = self.checkDiagonal(1, rowi, coli, piece, 1)
-                    if isWin is not None:
-                        return piece.team
-        #if weve gotten here, there is no winner.
-        return None
+    def printHistory(self):
+        for h in self.history:
+            print(h)
 
-    """Returns None if diagonal is not a win, returns team if is a win"""
-    def checkDiagonal(self, run, row, col, piece, direction):
-        if run >= 4:
-            return piece.team
-        if ((col + direction) < 0) or ((col + direction) > len(self.board[0]) - 1):
-            return None
-        if row < 0 or row > len(self.board) - 1:
-            return None
-        team = piece.team
-        if self.board[row-1][col + direction] is not None and self.board[row-1][col + direction].team == team:
-            return self.checkDiagonal(run + 1, row - 1, col + direction, piece, direction)
-        else:
-            return None
-
-    """if there is a valid move left, return true. else, return false"""
-    def availableMoves(self):
-        for pos in self.board[0]:
-            if pos == None:
-                return True
-        return False
-
-class Piece:
-    team = ''
-    
-    def __init__(self, team):
-        self.team = team
-
-               
-class Player:
-    team = ''
-    
-    def __init__(self, team):
-        self.team = team
-    def move(self, board=[]):
-        return int(random.random() * 7)
-
-
-
-b = Board()
-p1 = Player(config['team1Char'])
-p2 = Player(config['team2Char'])
-while not b.hasWinner() and b.availableMoves():
-    b.printBoard()
-    p1Moved = False
-    while not p1Moved:
-        move = p1.move()
-        print('player 1 move', move)
-        b.printBoard()
-        p1Moved = b.dropPiece(move, Piece(p1.team))
-    if b.availableMoves():
-        p2Moved = False
-        while not p2Moved:
-            move = p2.move()
-            print('player 2 move', move)
+    def printWinners(self):
+        splayers = sorted(self.players, reverse=True,key=lambda p: p.wins/max(.00001,p.total))
+        for p in splayers:
+            print(p.team, 'wins', p.wins, 'total', p.total, 'loss', p.losses, 'percentage', p.wins/p.total)
+    def evolve(self, top=None):
+        if top == None:
+            top = self.rate
+        splayers = sorted(self.players, reverse=True,key=lambda p: p.wins/max(.00001,p.total))
+#        for p in splayers:
+#            print(p.team, 'wins', p.wins, 'total', p.total, 'loss', p.losses)
+        for i in range(int(len(splayers)/2)):
+            splayers[-1 + (i * -1)] = splayers[i].mutate()
+        
+    def runGame(self, p1, p2, printGame=False):
+        b = Board([7,6], [p1,p2])
+        winner = b.hasWinner()
+        nMoves = 0
+        while winner == None and b.availableMoves():
+            p1Moved = False
+            while not p1Moved:
+                move = p1.move(b)
+                p1Moved = b.dropPiece(move, Piece(p1.team))
+            winner = b.hasWinner() 
+            if b.availableMoves() and not winner:
+                p2Moved = False
+                while not p2Moved:
+                    move = p2.move(b)
+                    p2Moved = b.dropPiece(move, Piece(p2.team))
+            winner = b.hasWinner()
+            nMoves += 1
+        result = {"result": 0, "nMoves": nMoves}
+        if winner is not None:
+            if winner.team == p1.team:
+                p1.wins += 1
+                p1.total += 1
+                p2.losses += 1
+                p2.total += 1
+            else:
+                p2.wins += 1
+                p2.total += 1
+                p1.losses += 1
+                p1.total += 1
+            result = {"result": 1 if winner.team == p1.team else -1, "nMoves": nMoves}
+        if printGame:
             b.printBoard()
-            p2Moved = b.dropPiece(move, Piece(p2.team))
-b.printBoard()
-print(b.hasWinner())
+        self.history.append(result)
+        return winner
+               
+    def runTournament(self, rounds=10, printGame = False):
+        for i in range(rounds):
+            p1i = int(random.random() * len(self.players))
+            p2i = int(random.random() * len(self.players))
+            if (p1i == p2i):
+                p2i = int(random.random() * len(self.players))
+            p1 = self.players[p1i]
+            p2 = self.players[p2i]
+            self.runGame(p1, p2, printGame)
+        self.evolve()
 
-
+    def setThreshold(self, rate=.5):
+        self.rate = rate
+    def printPlayers(self):
+        for p in self.players:
+            print(p.team)
 
 
 
